@@ -1,9 +1,7 @@
 package web
 
 import (
-    "net/http"
     "github.com/go-chi/chi"
-    "gifs-rest-server/api/web"
 )
 
 

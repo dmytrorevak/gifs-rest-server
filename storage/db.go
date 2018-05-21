@@ -6,9 +6,11 @@ import (
     _ "github.com/jinzhu/gorm/dialects/mysql"
 )
 
-func Migrate(db *gorm.DB) {
-    db.AutoMigrate(&Gif{})
-}
+//var Database gorm.DB
+
+//func Migrate(db *gorm.DB) {
+//    db.AutoMigrate(&Gif{})
+//}
 
 func InitDB(sqlStoragePath string) (*gorm.DB, error) {
     db, err := gorm.Open("mysql", sqlStoragePath)
