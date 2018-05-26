@@ -4,9 +4,10 @@ import "github.com/jinzhu/gorm"
 
 type Gif struct {
 	gorm.Model
-	Age int
+	Url     string
+	Rating  int
+	Name    string
+	Size    float32
 }
 
-type GifsList struct {
-	Gifs []Gif
-}
+type GifsList []Gif
