@@ -3,12 +3,13 @@ package web
 import (
 	"encoding/json"
 	"fmt"
-	"gifs-rest-server/storage"
-	"net/http"
-	"github.com/jinzhu/gorm"
+	"github.com/dmytrorevak/gifs-rest-server/storage"
 	"github.com/go-chi/chi"
-	"strconv"
+	"github.com/jinzhu/gorm"
 	"io/ioutil"
+	"net/http"
+	"strconv"
+	//"log"
 )
 
 type Handler struct {
@@ -16,33 +17,44 @@ type Handler struct {
 }
 
 func NewHandler(storage *gorm.DB) *Handler {
-	return &Handler {
+	return &Handler{
 		storage: *storage,
 	}
 }
 
 func (h Handler) GetGifs(w http.ResponseWriter, r *http.Request) {
-	gifs := storage.GetGifsList(&h.storage)
+	gifs, err := storage.GetGifsList(&h.storage)
+	if err != nil {
+		//TODO: implement logging + middleware
+		return
+	}
 	resp, err := json.Marshal(gifs)
 	if err != nil {
-		fmt.Printf("Error serialize gifs list: %v", err)
+		//TODO: implement logging + middleware
+		return
 	}
 
 	w.Write(resp)
+	// Add status code
 }
 
 func (h Handler) GetGif(w http.ResponseWriter, r *http.Request) {
 	strID := chi.URLParam(r, "gifID")
 	id, err := strconv.Atoi(strID)
 	if err != nil {
-		fmt.Printf("Error convert gifId: %v", err)
+		//Logging! fmt.Printf("Error convert gifId: %v", err)
 		w.WriteHeader(400)
 	}
 
-	g := storage.GetGif(&h.storage, id)
+	g, err := storage.GetGif(&h.storage, id)
+	if err != nil {
+		// ADD logging
+		// do not ignore errors!
+		return
+	}
 	resp, err := json.Marshal(g)
 	if err != nil {
-		fmt.Printf("Error serialize gif: %v", err)
+		//logging fmt.Printf("Error serialize gif: %v", err)
 		w.WriteHeader(404)
 	}
 
@@ -57,8 +69,17 @@ func (h Handler) CreateGif(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var g storage.Gif
-	json.Unmarshal(body, &g)
-	storage.CreateGif(&h.storage, &g)
+	// always check errors
+	err = json.Unmarshal(body, &g)
+	if err != nil {
+		// logging + status code
+		return
+	}
+	err = storage.CreateGif(&h.storage, &g)
+	if err != nil {
+		// logging + status code
+		return
+	}
 	w.WriteHeader(201)
 }
 
@@ -77,8 +98,17 @@ func (h Handler) UpdateGif(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var data storage.Gif
-	json.Unmarshal(body, &data)
-	storage.UpdateGif(&h.storage, id, &data)
+	// TODO; validating
+	err = json.Unmarshal(body, &data)
+	if err != nil {
+		//log err
+		return
+	}
+	err = storage.UpdateGif(&h.storage, id, &data)
+	if err != nil {
+		// logging + status code
+		return
+	}
 	w.WriteHeader(204)
 }
 
@@ -86,10 +116,16 @@ func (h Handler) DeleteGif(w http.ResponseWriter, r *http.Request) {
 	strID := chi.URLParam(r, "gifID")
 	id, err := strconv.Atoi(strID)
 	if err != nil {
-		fmt.Printf("Error convert gifId: %v", err)
+		//log fmt.Printf("Error convert gifId: %v", err)
 		w.WriteHeader(400)
+		return
 	}
 
-	storage.DeleteGif(&h.storage, id)
+	err = storage.DeleteGif(&h.storage, id)
+	if err != nil {
+		//logging fmt.Printf("Error convert gifId: %v", err)
+		w.WriteHeader(400)
+		return
+	}
 	w.WriteHeader(204)
 }

@@ -10,62 +10,54 @@ func InitDB(sqlStoragePath string) (*gorm.DB, error) {
 	db, err := gorm.Open("mysql", sqlStoragePath)
 	if err != nil {
 		fmt.Printf("Error init creation db: %v", err)
+		return nil, err
 	}
 
 	// Creating the table
 	if !db.HasTable(&Gif{}) {
 		if err = db.CreateTable(&Gif{}).Set("gorm:table_options", "ENGINE=InnoDB").Error; err != nil {
 			fmt.Printf("Error creation Gifs table: %v", err)
+			return nil, err
 		}
 	}
 
 	return db, nil
 }
 
-func GetGifsList(db *gorm.DB) []Gif {
+func GetGifsList(db *gorm.DB) ([]Gif, error) {
 	var gifs GifsList
-	err := db.Find(&gifs).Error
-	if err != nil {
-		fmt.Printf("Error getting gifs list: %v", err)
-	}
-
-	return gifs
+	return gifs, db.Find(&gifs).Error
 }
 
-func GetGif(db *gorm.DB, id int) Gif {
+func GetGif(db *gorm.DB, id int) (Gif, error) {
+	var g Gif
+	return g, db.First(&g, id).Error
+}
+
+func CreateGif(db *gorm.DB, gif *Gif) error {
+	return db.Create(&gif).Error
+}
+
+func UpdateGif(db *gorm.DB, id int, data *Gif) error {
 	var g Gif
 	err := db.First(&g, id).Error
 	if err != nil {
-		fmt.Printf("Error getting gif:%v", err)
+		return err
 	}
-
-	return g
-}
-
-func CreateGif(db *gorm.DB, gif *Gif) {
-	err := db.Create(&gif).Error
+	// TODO: validate input data before update
+	err = db.Model(&g).Updates(data).Error
 	if err != nil {
-		fmt.Printf("Error creating gif: %v", err)
+		// handle error higher
+		return err
 	}
+	return db.Save(&g).Error
 }
 
-func UpdateGif(db *gorm.DB, id int, data *Gif)  {
+func DeleteGif(db *gorm.DB, id int) error {
 	var g Gif
 	err := db.First(&g, id).Error
 	if err != nil {
-		fmt.Printf("Error getting gif: %v", err)
+		return err
 	}
-
-	db.Model(&g).Updates(data)
-	db.Save(&g)
-}
-
-func DeleteGif(db *gorm.DB, id int)  {
-	var g Gif
-	err := db.First(&g, id).Error
-	if err != nil {
-		fmt.Printf("Error getting gif:%v", err)
-	}
-
-	db.Unscoped().Delete(&g)
+	return db.Unscoped().Delete(&g).Error
 }
